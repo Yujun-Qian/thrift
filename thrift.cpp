@@ -18,18 +18,19 @@ using boost::shared_ptr;
 // argv[3]: rtmToken
 // argv[4]: groupId
 // argv[5]: msg
+// argv[6]: mtype
 
 int main(int argc, char **argv) {
     boost::shared_ptr <TSocket> socket(new TSocket("52.220.29.186", 13021));
     boost::shared_ptr <TTransport> transport(new TBufferedTransport(socket));
     boost::shared_ptr <TProtocol> protocol(new TBinaryProtocol(transport));
 
+    ServClient client(protocol);
+
     while (1) {
         try
         {
             transport->open();
-            ServClient client(protocol);
-
             int32_t pid = atoll(argv[1]);
             int64_t uid = atoll(argv[2]);
             std::string token = argv[3];
@@ -39,15 +40,19 @@ int main(int argc, char **argv) {
             std::cout << authed << std::endl;
 
             int64_t group_id = atoll(argv[4]);
-            int64_t mid = time(NULL) * 10000000;
-            int mtype = 61;
+            std::map<std::string, std::string> kv;
+            kv["group_id"] = argv[4];
+            client.add_variable(kv);
 
+            int64_t mid = time(NULL) * 10000000;
+            int mtype = atoi(argv[6]);
             mid++;
             std::string message = argv[5];
             client.send_broadcast_group_msg(group_id, mid, mtype, message);
-
             transport->close();
         } catch(...) {
+            transport->close();
+            transport->open();
         }
 
         sleep(1);
